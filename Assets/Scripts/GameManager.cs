@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
     
 public class GameManager : MonoBehaviour,IConvertGameObjectToEntity,IDeclareReferencedPrefabs{
@@ -15,7 +16,7 @@ public class GameManager : MonoBehaviour,IConvertGameObjectToEntity,IDeclareRefe
         spotEntity = conversionSystem.GetPrimaryEntity(SpotPrefab);
     }
     
-  
+    
     public void DeclareReferencedPrefabs(List<GameObject> referencedPrefabs)
     {
         referencedPrefabs.Add(SpotPrefab);

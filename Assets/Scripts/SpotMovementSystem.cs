@@ -13,7 +13,6 @@ public class SpotMovementSystem : ComponentSystem
     protected override void OnCreate()
     {
         random = new Random((uint)GetHashCode());
-        
     }
 
     protected override void OnStartRunning()
