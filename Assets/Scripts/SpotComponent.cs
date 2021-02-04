@@ -3,8 +3,12 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
-[GenerateAuthoringComponent]
-public struct SpotComponent : IComponentData
+namespace Rain.Components
 {
-    public float3 Velocity;
+    [GenerateAuthoringComponent]
+    public struct SpotComponent : IComponentData
+    {
+        public float3 Velocity;
+    }
+
 }
