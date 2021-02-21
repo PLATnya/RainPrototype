@@ -1,25 +1,22 @@
 using Rain.Components;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
-using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Transforms;
-using UnityEditor;
-using UnityEngine;
-using UnityEngine.Rendering;
 
-public class BackSystem : SystemBase
+public class SpotTeleportSystem : SystemBase
 {
 
     private bool teleport;
     protected override void OnUpdate()
     {
-        NativeArray<float> backPoints = new NativeArray<float>(4, Allocator.TempJob);
+        NativeArray<float> checkPointsArray = new NativeArray<float>(GameManager.Instance.backPoints, Allocator.TempJob);
+        
+        /*NativeArray<float> backPoints =new NativeArray<float>(4, Allocator.TempJob) ;
         backPoints[0] = 10;
         backPoints[1] = 0;
         backPoints[2] = -10;
-        backPoints[3] = GameManager.Instance.halfDelta;
+        backPoints[3] = GameManager.Instance.halfDelta;*/
 
         NativeArray<bool> teleportArray = new NativeArray<bool>(1, Allocator.TempJob);
         teleportArray[0] = teleport;
@@ -33,7 +30,7 @@ public class BackSystem : SystemBase
                 {
                     if (!teleportArray[0])
                     {
-                        if (translation.Value.y <= backPoints[2])
+                        if (translation.Value.y <= checkPointsArray[2])
                         {
                             teleportArray[0] = true;
                         }
@@ -45,17 +42,17 @@ public class BackSystem : SystemBase
                 }
                 if (teleportArray[0])
                 {
-                    float halfDelta = backPoints[3];
+                    float halfDelta = checkPointsArray[3];
                     if (translation.Value.y <=
-                        backPoints[1] - halfDelta)
+                        checkPointsArray[1] - halfDelta)
                         translation.Value.y += halfDelta * 4;
-                    else if (translation.Value.y > backPoints[0] - halfDelta &&
-                             translation.Value.y < backPoints[0] + halfDelta)
+                    else if (translation.Value.y > checkPointsArray[0] - halfDelta &&
+                             translation.Value.y < checkPointsArray[0] + halfDelta)
                     {
                         cmb.DestroyEntity(entity);
                     }
                 }
-            }).WithDisposeOnCompletion(backPoints).WithBurst().Schedule(Dependency);
+            }).WithDisposeOnCompletion(checkPointsArray).WithBurst().Schedule(Dependency);
         Dependency = teleportJob;
         ecbSystem.AddJobHandleForProducer(Dependency);
         teleportJob.Complete();

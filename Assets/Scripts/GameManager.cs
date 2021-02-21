@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEditor.Rendering;
 using UnityEngine;
-    
+using UnityEngine.Serialization;
+
 public class GameManager : MonoBehaviour,IConvertGameObjectToEntity,IDeclareReferencedPrefabs{
 
     [ReadOnly] public static GameManager Instance;
@@ -18,18 +20,22 @@ public class GameManager : MonoBehaviour,IConvertGameObjectToEntity,IDeclareRefe
     public float halfDelta = 5;
     public float spawnHeight;
     public float deadHeight;
-    public NativeArray<float> backPoints;
+    public float[] backPoints;
+
+    public float3 CameraOffset;
+    
+    public float CameraDistance;
 
     public void Awake()
     {
         Instance = this;
-        backPoints = new NativeArray<float>(3,Allocator.Temp);
-        backPoints[0] = halfDelta * 2;
-        backPoints[1] = 0.0f;
-        backPoints[2] = -halfDelta * 2;
-        spawnHeight = backPoints[0] + halfDelta;
-        deadHeight = backPoints[2] - halfDelta;
-        backPoints.Dispose();   
+        backPoints = new float[4]
+        {
+            halfDelta * 2, 0.0f,  -halfDelta * 2, halfDelta
+        };
+        spawnHeight = backPoints[0] + halfDelta*2;
+        deadHeight = backPoints[2] - halfDelta*2;
+       
     }
 
     public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
@@ -37,6 +43,7 @@ public class GameManager : MonoBehaviour,IConvertGameObjectToEntity,IDeclareRefe
         
         spotEntity = conversionSystem.GetPrimaryEntity(SpotPrefab);
         cameraEntity = entity;
+        
     }
     
     
