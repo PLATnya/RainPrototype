@@ -27,6 +27,8 @@ namespace Rain.Systems
         private EntityManager entityManager;
 
         PlayerControll controll;
+        
+        private float maxSpotSpeed = 0.1f;
         protected override void OnCreate()
         {
             controll = new PlayerControll();
@@ -39,7 +41,8 @@ namespace Rain.Systems
         {
             for (int i = 0; i < startCount; i++)
             {
-                SpawnSpot(5.0f);
+                
+                SpawnSpot(GameManager.Instance.halfDelta,5,maxSpotSpeed);
             }
             timeDelay = GameManager.Instance.spawnDelay;
         }
@@ -57,45 +60,23 @@ namespace Rain.Systems
         
         
         
-        private float maxSpeed = 0.1f;
+        
         protected override void OnUpdate()
         {
             
             timeDelay -= Time.DeltaTime;
             if (timeDelay <= 0.0f)
             {
-                SpawnSpot(GameManager.Instance.spawnHeight);
+                SpawnSpot(GameManager.Instance.spawnHeight,5,maxSpotSpeed);
                 timeDelay = random.NextFloat(0, GameManager.Instance.spawnDelay * 2);
             }
             Entities.WithAll<SpotComponent>().ForEach(
                 (Entity spot, ref Translation translation, ref SpotComponent spotComponent,
                     ref PhysicsVelocity velocity, ref LocalToWorld ltw) =>
                 {
-                    try
-                    {
-                        
-                        Entity particleSystemEntity = entityManager.GetBuffer<Child>(spot)[0].Value;
-                        ParticleSystem particleSystem =entityManager.GetComponentObject<ParticleSystem>(particleSystemEntity);
-                        
-                        float speed = -velocity.Linear.y;
-                        ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
-                        
-                        
-                        float3 emitOffset = random.NextFloat3(new float3(-0.7f, -0.7f, -0.7f), new float3(0.7f, 0.7f, 0.7f));
-                        emitParams.position = emitOffset; 
-                        emitParams.velocity =Vector3.forward*( 0 + (speed - 0) * (5 - 0) / (maxSpeed - 0))/100;
-                        particleSystem.Emit(emitParams,1);
-                        
-
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Log(ex.Message);
-                    }
-
-
+                    
                     Vector2 axis = controll.MovementAxis.Move.ReadValue<Vector2>();
+                    float axisFactor = 0.05f;
                     float HorizontalAxis = axis[0];
                     float VerticalAxis = axis[1];
                     
@@ -103,10 +84,11 @@ namespace Rain.Systems
                     velocity.Linear = spotComponent.Velocity/Time.DeltaTime;
                     if (EntityManager.HasComponent<PlayerComponent>(spot))
                     {
+                        
                         spotComponent.Velocity =
                             new float3(0, spotComponent.Velocity.y, 0) +
-                            (float3) camera.transform.forward * VerticalAxis * 0.05f +
-                            (float3)camera.transform.right * HorizontalAxis * 0.05f;
+                            (float3) camera.transform.forward * VerticalAxis * axisFactor +
+                            (float3)camera.transform.right * HorizontalAxis * axisFactor;
                         
                         float3 forwardVector = ltw.Forward;
                         float3 rightVector = ltw.Right;
@@ -131,12 +113,12 @@ namespace Rain.Systems
         }
         
         
-        void SpawnSpot(float y)
+        void SpawnSpot(float y,float radius,float maxSpeed)
         {
             Entity spawnedSpot = entityManager.Instantiate(GameManager.Instance.spotEntity);
             entityManager.SetComponentData(spawnedSpot, new Translation
             {
-                Value = new float3(random.NextFloat(-5, 5), y, random.NextFloat(-5, 5))
+                Value = new float3(random.NextFloat(-radius, radius), y, random.NextFloat(-radius, radius))
             });
 
             entityManager.AddComponentData(spawnedSpot, new SpotComponent
