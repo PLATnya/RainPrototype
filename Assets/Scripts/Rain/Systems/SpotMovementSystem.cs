@@ -1,84 +1,67 @@
-
-using System;
 using Unity.Entities;
-
 using Unity.Mathematics;
 using Unity.Transforms;
 using Rain.Components;
-using Unity.Burst;
-using Unity.Collections;
 using Unity.Physics;
-using Unity.Physics.Authoring;
-using Unity.Rendering;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.ParticleSystemJobs;
-using UnityEngine.PlayerLoop;
 using Random = Unity.Mathematics.Random;
 
 namespace Rain.Systems
 {
     public class SpotMovementSystem : ComponentSystem
     {
-        private Random random;
-        private int startCount = 20;
-        private float timeDelay;
-        private EntityManager entityManager;
-
-        PlayerControll controll;
+        private Random _random;
+        private EntityManager _entityManager;
+        private PlayerControll _control;
         
-        private float maxSpotSpeed = 0.1f;
+        private float _timeDelay;
+        
+        private const int StartCount = 20;
+        private const float MAXSpotSpeed = 0.1f;
+
         protected override void OnCreate()
         {
-            controll = new PlayerControll();
-            controll.Enable();
-            random = new Random((uint) GetHashCode());
-            entityManager = World.EntityManager;
+            _control = new PlayerControll();
+            _control.Enable();
+            _random = new Random((uint) GetHashCode());
+            _entityManager = World.EntityManager;
         }
 
         protected override void OnStartRunning()
         {
-            for (int i = 0; i < startCount; i++)
+            for (var i = 0; i < StartCount; i++)
             {
                 
-                SpawnSpot(GameManager.Instance.halfDelta,5,maxSpotSpeed);
+                SpawnSpot(GameManager.Instance.halfDelta,5,MAXSpotSpeed);
             }
-            timeDelay = GameManager.Instance.spawnDelay;
+            _timeDelay = GameManager.Instance.spawnDelay;
         }
-        private float angleX;
-        private float angleY;
+        private float _angleX;
 
-        void AngleClamp(ref float angle)
+        private static void AngleClamp(ref float angle)
         {
             if (angle > 180) angle = -180;
             else if (angle < -180) angle = 180;
         }
 
-        
-        
-        
-        
-        
-        
         protected override void OnUpdate()
         {
             
-            timeDelay -= Time.DeltaTime;
-            if (timeDelay <= 0.0f)
+            _timeDelay -= Time.DeltaTime;
+            if (_timeDelay <= 0.0f)
             {
-                SpawnSpot(GameManager.Instance.spawnHeight,5,maxSpotSpeed);
-                timeDelay = random.NextFloat(0, GameManager.Instance.spawnDelay * 2);
+                SpawnSpot(GameManager.Instance.spawnHeight,5,MAXSpotSpeed);
+                _timeDelay = _random.NextFloat(0, GameManager.Instance.spawnDelay * 2);
             }
             Entities.WithAll<SpotComponent>().ForEach(
                 (Entity spot, ref Translation translation, ref SpotComponent spotComponent,
                     ref PhysicsVelocity velocity, ref LocalToWorld ltw) =>
                 {
                     
-                    Vector2 axis = controll.MovementAxis.Move.ReadValue<Vector2>();
+                    Vector2 axis = _control.MovementAxis.Move.ReadValue<Vector2>();
                     float axisFactor = 0.05f;
-                    float HorizontalAxis = axis[0];
-                    float VerticalAxis = axis[1];
+                    float horizontalAxis = axis[0];
+                    float verticalAxis = axis[1];
                     
                     GameObject camera = GameManager.Instance.gameObject;
                     velocity.Linear = spotComponent.Velocity/Time.DeltaTime;
@@ -87,27 +70,27 @@ namespace Rain.Systems
                         
                         spotComponent.Velocity =
                             new float3(0, spotComponent.Velocity.y, 0) +
-                            (float3) camera.transform.forward * VerticalAxis * axisFactor +
-                            (float3)camera.transform.right * HorizontalAxis * axisFactor;
+                            (float3) camera.transform.forward * verticalAxis * axisFactor +
+                            (float3)camera.transform.right * horizontalAxis * axisFactor;
                         
                         float3 forwardVector = ltw.Forward;
                         float3 rightVector = ltw.Right;
                         
-                        AngleClamp(ref angleX);
-                        angleX -= controll.MouseAxis.MouseDeltaX.ReadValue<float>();
+                        AngleClamp(ref _angleX);
+                        _angleX -= _control.MouseAxis.MouseDeltaX.ReadValue<float>();
                        
-                        float a_X = math.sin(angleX) * GameManager.Instance.CameraDistance;
-                        float b_X = math.cos(angleX) * GameManager.Instance.CameraDistance;
+                        float aX = math.sin(_angleX) * GameManager.Instance.CameraDistance;
+                        float bX = math.cos(_angleX) * GameManager.Instance.CameraDistance;
                         
                         
-                        float3 VerticalRotation = forwardVector * a_X + rightVector * b_X;
-                        camera.transform.position = translation.Value + VerticalRotation + new float3(0,GameManager.Instance.CameraOffset.y,0);
+                        float3 verticalRotation = forwardVector * aX + rightVector * bX;
+                        camera.transform.position = translation.Value + verticalRotation + new float3(0,GameManager.Instance.CameraOffset.y,0);
                         camera.transform.rotation = Quaternion.LookRotation((Vector3)translation.Value - camera.transform.position);
                         
                     }
                     if (translation.Value.y < GameManager.Instance.deadHeight)
                     {
-                        entityManager.DestroyEntity(spot);
+                        _entityManager.DestroyEntity(spot);
                     }
                 });
         }
@@ -115,15 +98,15 @@ namespace Rain.Systems
         
         void SpawnSpot(float y,float radius,float maxSpeed)
         {
-            Entity spawnedSpot = entityManager.Instantiate(GameManager.Instance.spotEntity);
-            entityManager.SetComponentData(spawnedSpot, new Translation
+            Entity spawnedSpot = _entityManager.Instantiate(GameManager.Instance.spotEntity);
+            _entityManager.SetComponentData(spawnedSpot, new Translation
             {
-                Value = new float3(random.NextFloat(-radius, radius), y, random.NextFloat(-radius, radius))
+                Value = new float3(_random.NextFloat(-radius, radius), y, _random.NextFloat(-radius, radius))
             });
-
-            entityManager.AddComponentData(spawnedSpot, new SpotComponent
+            
+            _entityManager.AddComponentData(spawnedSpot, new SpotComponent
             {
-                Velocity = new float3(0, random.NextFloat(-maxSpeed, 0), 0)
+                Velocity = new float3(0, _random.NextFloat(-maxSpeed, 0), 0)
             });
         }
 
